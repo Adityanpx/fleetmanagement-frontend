@@ -7,6 +7,8 @@ import { api, fetcher } from '@/lib/api';
 import { today, str, orNull, numOrNull } from '@/lib/format';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
+import Switch from '@/components/ui/Switch';
+import { Truck, MapPin, IndianRupee } from 'lucide-react';
 import type { Vehicle, Driver, Company, Trip } from '@/lib/types';
 
 interface FormState {
@@ -81,70 +83,85 @@ export default function TripForm({ initial, onSaved }: { initial?: Trip; onSaved
   const driverList = usable(drivers, f.driver_id);
   const companyList = usable(companies, f.company_id);
 
+  const section = 'rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4';
+  const heading = (icon: React.ReactNode, text: string) => (
+    <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">{icon}{text}</p>
+  );
+
   return (
     <form onSubmit={submit} className="space-y-4">
       {vehicles && vehicleList?.length === 0 && (
-        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
+        <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-700 ring-1 ring-inset ring-amber-100">
           You need a vehicle first. <Link href="/vehicles" className="font-medium underline">Add a vehicle</Link>
         </p>
       )}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Vehicle" required>
-          <Select required value={f.vehicle_id} onChange={(e) => set('vehicle_id', e.target.value)}>
-            <option value="">Select vehicle</option>
-            {vehicleList?.map((v) => <option key={v.id} value={v.id}>{v.number} · {v.brand}</option>)}
-          </Select>
-        </Field>
-        <Field label="Company">
-          <Select value={f.company_id} onChange={(e) => pickCompany(e.target.value)}>
-            <option value="">No company</option>
-            {companyList?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </Select>
-        </Field>
-        <Field label="Driver">
-          <Select value={f.driver_id} onChange={(e) => set('driver_id', e.target.value)}>
-            <option value="">No driver</option>
-            {driverList?.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-          </Select>
-        </Field>
-        <Field label="Cargo / grade">
-          <input className="input" value={f.cargo} onChange={(e) => set('cargo', e.target.value)} placeholder="e.g. OPC 53" />
-        </Field>
-        <Field label="Start date" required>
-          <input type="date" className="input" required value={f.start_date} onChange={(e) => set('start_date', e.target.value)} />
-        </Field>
-        <Field label="Start location" required>
-          <input className="input" required value={f.start_location} onChange={(e) => set('start_location', e.target.value)} placeholder="Plant / city" />
-        </Field>
-        <Field label="Expected end date">
-          <input type="date" className="input" min={f.start_date} value={f.expected_end_date} onChange={(e) => set('expected_end_date', e.target.value)} />
-        </Field>
-        <Field label="Expected end location">
-          <input className="input" value={f.expected_end_location} onChange={(e) => set('expected_end_location', e.target.value)} />
-        </Field>
-        <Field label="Start odometer (km)">
-          <input type="number" inputMode="numeric" min={0} className="input" value={f.start_odometer} onChange={(e) => set('start_odometer', e.target.value)} />
-        </Field>
-        <Field label="Quantity (tons)">
-          <input type="number" inputMode="decimal" min={0} step="any" className="input" value={f.quantity} onChange={(e) => set('quantity', e.target.value)} />
-        </Field>
+
+      <div className={section}>
+        {heading(<Truck size={13} />, 'Who & what')}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Vehicle" required>
+            <Select required value={f.vehicle_id} onChange={(e) => set('vehicle_id', e.target.value)}>
+              <option value="">Select vehicle</option>
+              {vehicleList?.map((v) => <option key={v.id} value={v.id}>{v.number} · {v.brand}</option>)}
+            </Select>
+          </Field>
+          <Field label="Company">
+            <Select value={f.company_id} onChange={(e) => pickCompany(e.target.value)}>
+              <option value="">No company</option>
+              {companyList?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </Select>
+          </Field>
+          <Field label="Driver">
+            <Select value={f.driver_id} onChange={(e) => set('driver_id', e.target.value)}>
+              <option value="">No driver</option>
+              {driverList?.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </Select>
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Cargo / grade">
+              <input className="input" value={f.cargo} onChange={(e) => set('cargo', e.target.value)} placeholder="OPC 53" />
+            </Field>
+            <Field label="Qty (tons)">
+              <input type="number" inputMode="decimal" min={0} step="any" className="input" value={f.quantity} onChange={(e) => set('quantity', e.target.value)} />
+            </Field>
+          </div>
+        </div>
+      </div>
+
+      <div className={section}>
+        {heading(<MapPin size={13} />, 'Route')}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Start location" required>
+            <input className="input" required value={f.start_location} onChange={(e) => set('start_location', e.target.value)} placeholder="Plant / city" />
+          </Field>
+          <Field label="Expected end location">
+            <input className="input" value={f.expected_end_location} onChange={(e) => set('expected_end_location', e.target.value)} placeholder="Depot / city" />
+          </Field>
+          <Field label="Start date" required>
+            <input type="date" className="input" required value={f.start_date} onChange={(e) => set('start_date', e.target.value)} />
+          </Field>
+          <Field label="Expected end date">
+            <input type="date" className="input" min={f.start_date} value={f.expected_end_date} onChange={(e) => set('expected_end_date', e.target.value)} />
+          </Field>
+          <Field label="Start odometer (km)">
+            <input type="number" inputMode="numeric" min={0} className="input" value={f.start_odometer} onChange={(e) => set('start_odometer', e.target.value)} />
+          </Field>
+        </div>
       </div>
 
       {/* Freight + deduct switch together */}
-      <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+      <div className="rounded-2xl border border-indigo-100 bg-linear-to-br from-indigo-50/70 to-white p-4">
+        {heading(<IndianRupee size={13} />, 'Money')}
         <Field label="Freight amount (₹)" required>
-          <input type="number" inputMode="decimal" min={0} step="any" className="input" required value={f.freight_amount} onChange={(e) => set('freight_amount', e.target.value)} />
+          <input type="number" inputMode="decimal" min={0} step="any" className="input text-lg font-semibold" required value={f.freight_amount} onChange={(e) => set('freight_amount', e.target.value)} placeholder="0" />
         </Field>
-        <label className="mt-3 flex items-center gap-3 text-sm">
-          <input type="checkbox" className="h-4 w-4 rounded border-zinc-300 accent-zinc-900" checked={f.deduct_company_diesel}
-            onChange={(e) => set('deduct_company_diesel', e.target.checked)} />
-          <span>Deduct company-given diesel from freight</span>
-        </label>
-        <p className="mt-1 pl-7 text-xs text-zinc-400">On = company owes freight minus the diesel it gave. Off = diesel is free, full freight owed.</p>
+        <Switch className="mt-4" checked={f.deduct_company_diesel} onChange={(v) => set('deduct_company_diesel', v)}
+          label="Deduct company-given diesel from freight"
+          description="On: company owes freight minus the diesel it gave. Off: diesel is free, full freight is owed." />
       </div>
 
       <Field label="Notes">
-        <textarea className="input min-h-[70px]" value={f.notes} onChange={(e) => set('notes', e.target.value)} />
+        <textarea className="input min-h-[70px]" value={f.notes} onChange={(e) => set('notes', e.target.value)} placeholder="Anything worth remembering" />
       </Field>
 
       <div className="flex justify-end">

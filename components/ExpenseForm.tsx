@@ -3,18 +3,13 @@ import { useState } from 'react';
 import useSWR from 'swr';
 import toast from 'react-hot-toast';
 import { api, fetcher } from '@/lib/api';
-import { today, str, orNull, numOrNull } from '@/lib/format';
+import { today, str, orNull, numOrNull, inr, cn } from '@/lib/format';
+import { CATEGORY } from '@/lib/meta';
+import { AnimatePresence, motion } from 'motion/react';
+import Segmented from '@/components/ui/Segmented';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import type { Category, Company, Expense, PaidBy } from '@/lib/types';
-
-const CATS: { value: Category; label: string }[] = [
-  { value: 'advance', label: 'Advance to driver' }, { value: 'diesel', label: 'Diesel' },
-  { value: 'toll', label: 'Toll' }, { value: 'food', label: 'Food / batta' },
-  { value: 'fine', label: 'Fine' }, { value: 'parking', label: 'Parking' },
-  { value: 'loading_unloading', label: 'Loading / unloading' }, { value: 'tyre', label: 'Tyre' },
-  { value: 'repair', label: 'Repair / maintenance' }, { value: 'other', label: 'Other' },
-];
 
 interface FormState {
   category: Category; amount: string; expense_date: string; paid_by: PaidBy; company_id: string;
@@ -92,53 +87,86 @@ export default function ExpenseForm({ tripId, tripHasDriver, tripCompanyId, dedu
     }
   }
 
+  const order: Category[] = ['diesel', 'advance', 'toll', 'food', 'loading_unloading', 'parking', 'tyre', 'repair', 'fine', 'other'];
+
   return (
-    <form onSubmit={submit} className="space-y-4">
-      <Field label="Category" required>
-        <Select value={f.category} onChange={(e) => setCategory(e.target.value as Category)}>
-          {CATS.map((c) => (
-            <option key={c.value} value={c.value} disabled={c.value === 'advance' && !tripHasDriver}>
-              {c.label}{c.value === 'advance' && !tripHasDriver ? ' (needs a driver)' : ''}
-            </option>
-          ))}
-        </Select>
-      </Field>
-
-      {isDiesel && (
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Litres"><input type="number" inputMode="decimal" min={0} step="any" className="input" value={f.litres} onChange={(e) => setLitres(e.target.value)} /></Field>
-          <Field label="Rate (₹/L)"><input type="number" inputMode="decimal" min={0} step="any" className="input" value={f.rate} onChange={(e) => setRate(e.target.value)} /></Field>
-          <div className="col-span-2"><Field label="Fill location" required>
-            <input className="input" required value={f.fill_location} onChange={(e) => set('fill_location', e.target.value)} placeholder="Pump / place" /></Field></div>
+    <form onSubmit={submit} className="space-y-5">
+      {/* Category picker */}
+      <div>
+        <label className="label">Category</label>
+        <div className="grid grid-cols-5 gap-2">
+          {order.map((c) => {
+            const m = CATEGORY[c];
+            const active = f.category === c;
+            const disabled = c === 'advance' && !tripHasDriver;
+            return (
+              <button key={c} type="button" disabled={disabled} onClick={() => setCategory(c)}
+                title={disabled ? 'Needs a driver on the trip' : m.label}
+                className={cn('relative flex flex-col items-center gap-1 rounded-xl border px-1 py-2.5 text-[11px] font-medium transition active:scale-95',
+                  active ? 'border-indigo-300 bg-indigo-50 text-indigo-700 shadow-glow' : 'border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50',
+                  disabled && 'cursor-not-allowed opacity-40')}>
+                <span className={cn('grid h-8 w-8 place-items-center rounded-lg transition', active ? 'bg-white text-indigo-600' : m.tint)}><m.icon size={16} /></span>
+                <span className="w-full truncate text-center">{m.label.split(' / ')[0]}</span>
+              </button>
+            );
+          })}
         </div>
-      )}
+        {!tripHasDriver && <p className="mt-1.5 text-xs text-zinc-400">Advance needs a driver on the trip.</p>}
+      </div>
 
-      {needsDetail && (
-        <Field label={f.category === 'fine' ? 'Reason' : f.category === 'tyre' ? 'Tyre / work' : 'Details'} required={f.category === 'other'}>
-          <input className="input" required={f.category === 'other'} value={f.work_detail} onChange={(e) => set('work_detail', e.target.value)} />
-        </Field>
-      )}
+      <AnimatePresence initial={false} mode="popLayout">
+        {isDiesel && (
+          <motion.div key="diesel" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden">
+            <div className="rounded-2xl border border-blue-100 bg-linear-to-br from-blue-50/80 to-white p-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Litres"><input type="number" inputMode="decimal" min={0} step="any" className="input" value={f.litres} onChange={(e) => setLitres(e.target.value)} placeholder="0" /></Field>
+                <Field label="Rate (₹/L)"><input type="number" inputMode="decimal" min={0} step="any" className="input" value={f.rate} onChange={(e) => setRate(e.target.value)} placeholder="0" /></Field>
+              </div>
+              {autoAmount && (
+                <p className="mt-2 text-xs text-blue-700">{f.litres} L × ₹{f.rate} = <b>{inr(Number(f.amount))}</b></p>
+              )}
+              <div className="mt-3"><Field label="Fill location" required>
+                <input className="input" required value={f.fill_location} onChange={(e) => set('fill_location', e.target.value)} placeholder="Pump / place" /></Field></div>
+            </div>
+          </motion.div>
+        )}
+        {needsDetail && (
+          <motion.div key="detail" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+            <Field label={f.category === 'fine' ? 'Reason' : f.category === 'tyre' ? 'Tyre / work' : 'Details'} required={f.category === 'other'}>
+              <input className="input" required={f.category === 'other'} value={f.work_detail} onChange={(e) => set('work_detail', e.target.value)} />
+            </Field>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Amount (₹)" required hint={autoAmount ? 'litres × rate' : undefined}>
-          <input type="number" inputMode="decimal" min={0} step="any" className="input" required value={f.amount}
-            onChange={(e) => set('amount', e.target.value)} readOnly={autoAmount} />
+          <input type="number" inputMode="decimal" min={0} step="any" className="input text-base font-semibold" required value={f.amount}
+            onChange={(e) => set('amount', e.target.value)} readOnly={autoAmount} placeholder="0" />
         </Field>
         <Field label="Date" required>
           <input type="date" className="input" required value={f.expense_date} onChange={(e) => set('expense_date', e.target.value)} />
         </Field>
       </div>
 
-      <Field label="Paid by" required
-        hint={isDiesel && f.paid_by === 'company'
-          ? (deductsDiesel ? 'Deducted from this trip’s freight.' : 'This trip does not deduct company diesel, so it costs nothing.')
-          : f.paid_by === 'driver' ? 'Added to what we owe the driver.' : undefined}>
-        <Select value={f.paid_by} onChange={(e) => set('paid_by', e.target.value as PaidBy)}>
-          <option value="ourselves">Ourselves</option>
-          <option value="company">Company</option>
-          <option value="driver" disabled={!tripHasDriver || isAdvance}>Driver&apos;s own money (we owe back)</option>
-        </Select>
-      </Field>
+      <div>
+        <label className="label">Paid by</label>
+        <Segmented full value={f.paid_by} onChange={(v) => {
+          if (v === 'driver' && (!tripHasDriver || isAdvance)) { toast.error(isAdvance ? 'An advance can’t be paid by the driver.' : 'This trip has no driver.'); return; }
+          set('paid_by', v);
+        }} options={[
+          { value: 'ourselves', label: 'Ourselves' },
+          { value: 'company', label: 'Company' },
+          { value: 'driver', label: 'Driver' },
+        ]} />
+        <p className="mt-1.5 text-xs text-zinc-500">
+          {isDiesel && f.paid_by === 'company'
+            ? (deductsDiesel ? 'Deducted from this trip’s freight.' : 'This trip does not deduct company diesel, so it costs nothing.')
+            : f.paid_by === 'driver' ? 'Driver’s own money — added to what we owe them.'
+              : f.paid_by === 'company' ? 'Paid by the company; not our cost.' : 'Paid from our pocket — counts as trip cost.'}
+        </p>
+      </div>
 
       {f.paid_by === 'company' && (
         <Field label="Which company" required={!tripCompanyId}>
@@ -156,14 +184,12 @@ export default function ExpenseForm({ tripId, tripHasDriver, tripCompanyId, dedu
             <option value="bank">Bank</option><option value="card">Fuel card</option>
           </Select>
         </Field>
-        <Field label="Vendor / name"><input className="input" value={f.vendor_name} onChange={(e) => set('vendor_name', e.target.value)} /></Field>
+        <Field label="Vendor / name"><input className="input" value={f.vendor_name} onChange={(e) => set('vendor_name', e.target.value)} placeholder="Optional" /></Field>
       </div>
 
-      <Field label="Note"><input className="input" value={f.note} onChange={(e) => set('note', e.target.value)} /></Field>
+      <Field label="Note"><input className="input" value={f.note} onChange={(e) => set('note', e.target.value)} placeholder="Optional" /></Field>
 
-      <div className="flex justify-end">
-        <button className="btn-primary w-full sm:w-auto" disabled={loading}>{loading ? 'Saving…' : initial ? 'Save' : 'Add expense'}</button>
-      </div>
+      <button className="btn-primary w-full" disabled={loading}>{loading ? 'Saving…' : initial ? 'Save changes' : 'Add expense'}</button>
     </form>
   );
 }

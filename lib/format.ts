@@ -38,5 +38,35 @@ export const orNull = <T,>(v: T | '' | undefined | null): T | null =>
 export const numOrNull = (v: string | number | null | undefined): number | null =>
   v === '' || v === undefined || v === null ? null : Number(v);
 
+/** ₹12.4L / ₹1.2Cr / ₹48K style for tight spaces (axes, chips). */
+export function inrCompact(n?: number | string | null) {
+  const v = Number(n || 0), a = Math.abs(v), s = v < 0 ? '-' : '';
+  if (a >= 1e7) return `${s}₹${+(a / 1e7).toFixed(2)}Cr`;
+  if (a >= 1e5) return `${s}₹${+(a / 1e5).toFixed(1)}L`;
+  if (a >= 1e3) return `${s}₹${+(a / 1e3).toFixed(1)}K`;
+  return `${s}₹${Math.round(a)}`;
+}
+
+/** Whole days from `a` to `b` (both 'YYYY-MM-DD'). */
+export function daysBetween(a: string, b: string) {
+  return Math.round((parseDate(b).getTime() - parseDate(a).getTime()) / 86400000);
+}
+export const daysFromToday = (s: string) => daysBetween(today(), s);
+export const addDays = (s: string, n: number) => { const d = parseDate(s); d.setDate(d.getDate() + n); return isoDate(d); };
+
+/** "in 12 days" / "3 days ago" / "today" */
+export function relDays(s: string) {
+  const d = daysFromToday(s);
+  if (d === 0) return 'today';
+  if (d === 1) return 'tomorrow';
+  if (d === -1) return 'yesterday';
+  return d > 0 ? `in ${d} days` : `${-d} days ago`;
+}
+
+export const initials = (s: string) =>
+  s.replace(/^E2E-/, '').split(/[\s-]+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('') || '?';
+
+export const pct = (part: number, whole: number) => (whole > 0 ? Math.max(0, Math.min(100, (part / whole) * 100)) : 0);
+
 /** API value -> form value (null becomes ''). */
 export const str = (v: string | number | null | undefined) => (v === null || v === undefined ? '' : String(v));

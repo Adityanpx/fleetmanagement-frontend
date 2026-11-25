@@ -2,21 +2,25 @@
 import { useState } from 'react';
 import useSWR from 'swr';
 import toast from 'react-hot-toast';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { motion } from 'motion/react';
+import { Plus, Pencil, Trash2, Phone, IdCard, Users, ArrowLeftRight } from 'lucide-react';
 import { api, fetcher } from '@/lib/api';
-import { inr, fmtDate, today, str, orNull, numOrNull, cn } from '@/lib/format';
+import { inr, fmtDate, daysFromToday, today, str, orNull, numOrNull, cn } from '@/lib/format';
 import { removeRecord } from '@/lib/remove';
 import type { Driver } from '@/lib/types';
 import PageHeader from '@/components/ui/PageHeader';
-import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ui/ErrorState';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { InactiveBadge } from '@/components/ui/Badge';
 import { Field } from '@/components/ui/Field';
-import { Select } from '@/components/ui/Select';
-import ActiveToggle from '@/components/ActiveToggle';
+import Switch from '@/components/ui/Switch';
+import Segmented from '@/components/ui/Segmented';
+import Avatar from '@/components/ui/Avatar';
+import SearchInput from '@/components/ui/SearchInput';
+import AnimatedNumber from '@/components/ui/AnimatedNumber';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 export default function DriversPage() {
   const { data, error, isLoading, mutate } = useSWR<Driver[]>('/drivers', fetcher);
@@ -24,43 +28,85 @@ export default function DriversPage() {
   const [edit, setEdit] = useState<Driver | null>(null);
   const [del, setDel] = useState<Driver | null>(null);
   const [settle, setSettle] = useState<Driver | null>(null);
+  const [q, setQ] = useState('');
 
   const remove = async () => { if (del && await removeRecord(`/drivers/${del.id}`, 'Driver')) mutate(); };
+  const weOwe = (data ?? []).reduce((a, d) => a + Math.max(0, Number(d.balance) || 0), 0);
+  const theyOwe = (data ?? []).reduce((a, d) => a + Math.max(0, -(Number(d.balance) || 0)), 0);
+  const shown = (data ?? []).filter((d) => !q || [d.name, d.phone, d.license_number].some((x) => x?.toLowerCase().includes(q.toLowerCase())));
 
   return (
     <>
-      <PageHeader title="Drivers" subtitle="Balances include advances, own spends and settlements"
+      <PageHeader title="Drivers" subtitle="Balances roll up advances, money they spent for us, and settlements"
         action={<button type="button" className="btn-primary" onClick={() => { setEdit(null); setOpen(true); }}><Plus size={16} /> Add driver</button>} />
-      {error ? <ErrorState error={error} onRetry={() => mutate()} /> : isLoading ? <Spinner /> : !data || data.length === 0 ? (
-        <EmptyState title="No drivers yet" hint="Add drivers to track advances and what you owe them." />
+
+      {data && data.length > 0 && (
+        <div className="mb-5 grid grid-cols-2 gap-3">
+          <div className="card bg-linear-to-br from-emerald-50 to-white p-4">
+            <p className="text-xs font-medium text-zinc-500">We owe drivers</p>
+            <AnimatedNumber value={weOwe} format={inr} className="text-xl font-semibold tabular-nums text-emerald-600" />
+          </div>
+          <div className="card bg-linear-to-br from-red-50 to-white p-4">
+            <p className="text-xs font-medium text-zinc-500">Drivers owe us</p>
+            <AnimatedNumber value={theyOwe} format={inr} className="text-xl font-semibold tabular-nums text-red-600" />
+          </div>
+        </div>
+      )}
+      {data && data.length > 0 && <SearchInput value={q} onChange={setQ} placeholder="Search name, phone, licence…" className="mb-5 sm:w-80" />}
+
+      {error ? <ErrorState error={error} onRetry={() => mutate()} /> : isLoading ? <SkeletonList rows={3} /> : !data || data.length === 0 ? (
+        <EmptyState icon={Users} title="No drivers yet" hint="Add drivers to track advances and what you owe them." />
       ) : (
-        <div className="space-y-2">
-          {data.map((d) => {
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {shown.map((d, i) => {
             const bal = Number(d.balance) || 0;
+            const lic = d.license_expiry ? daysFromToday(d.license_expiry) : null;
             return (
-              <div key={d.id} className={cn('card flex flex-wrap items-center justify-between gap-3 p-4', !d.is_active && 'opacity-60')}>
-                <div className="min-w-0">
-                  <p className="flex items-center gap-2 font-semibold">{d.name} {!d.is_active && <InactiveBadge />}</p>
-                  <p className="text-xs text-zinc-400">
-                    {d.phone || 'No phone'} · Lic {d.license_number || '—'}
-                    {d.license_expiry && <> · expires <span className={d.license_expiry < today() ? 'text-red-500' : ''}>{fmtDate(d.license_expiry)}</span></>}
-                  </p>
+              <motion.div key={d.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 9) * 0.04 }}
+                className={cn('card card-hover group flex flex-col p-5', !d.is_active && 'opacity-60')}>
+                <div className="flex items-start gap-3">
+                  <Avatar name={d.name} seed={d.id} size="lg" />
+                  <div className="min-w-0 flex-1">
+                    <p className="flex flex-wrap items-center gap-2 font-semibold">{d.name} {!d.is_active && <InactiveBadge />}</p>
+                    {d.phone ? (
+                      <a href={`tel:${d.phone}`} className="mt-0.5 inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline"><Phone size={11} />{d.phone}</a>
+                    ) : <p className="mt-0.5 text-xs text-zinc-400">No phone</p>}
+                  </div>
+                  <div className="flex opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
+                    <button type="button" className="icon-btn" aria-label="Edit driver" onClick={() => { setEdit(d); setOpen(true); }}><Pencil size={15} /></button>
+                    <button type="button" className="icon-btn hover:text-red-600" aria-label="Delete driver" onClick={() => setDel(d)}><Trash2 size={15} /></button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className={cn('mr-2 text-sm font-medium tabular-nums',
-                    bal > 0 ? 'text-emerald-600' : bal < 0 ? 'text-red-600' : 'text-zinc-400')}>
-                    {bal > 0 ? `We owe ${inr(bal)}` : bal < 0 ? `Owes us ${inr(-bal)}` : 'Settled'}</span>
-                  {bal !== 0 && <button type="button" className="btn-ghost px-2 text-xs" onClick={() => setSettle(d)}>Settle</button>}
-                  <button type="button" className="icon-btn" aria-label="Edit driver" onClick={() => { setEdit(d); setOpen(true); }}><Pencil size={15} /></button>
-                  <button type="button" className="icon-btn hover:text-red-600" aria-label="Delete driver" onClick={() => setDel(d)}><Trash2 size={15} /></button>
+
+                <div className="mt-4 flex flex-wrap gap-1.5 text-[11px]">
+                  <span className="chip bg-zinc-100 text-zinc-600"><IdCard size={12} />{d.license_number || 'No licence'}</span>
+                  {lic !== null && (
+                    <span className={cn('chip', lic < 0 ? 'bg-red-50 text-red-700' : lic <= 30 ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700')}>
+                      {lic < 0 ? 'Licence expired' : lic <= 30 ? `Licence: ${lic}d left` : `Valid till ${fmtDate(d.license_expiry)}`}
+                    </span>
+                  )}
+                  {d.salary ? <span className="chip bg-zinc-100 text-zinc-600">{inr(d.salary)}/mo</span> : null}
                 </div>
-              </div>
+
+                <div className={cn('mt-4 flex items-center justify-between gap-3 rounded-xl p-3',
+                  bal > 0 ? 'bg-emerald-50' : bal < 0 ? 'bg-red-50' : 'bg-zinc-50')}>
+                  <div>
+                    <p className="text-[11px] text-zinc-500">{bal > 0 ? 'We owe' : bal < 0 ? 'Owes us' : 'Balance'}</p>
+                    <p className={cn('text-lg font-semibold tabular-nums', bal > 0 ? 'text-emerald-700' : bal < 0 ? 'text-red-700' : 'text-zinc-400')}>
+                      {bal === 0 ? 'Settled' : inr(Math.abs(bal))}
+                    </p>
+                  </div>
+                  {bal !== 0 && (
+                    <button type="button" className="btn-secondary px-3 py-1.5 text-xs" onClick={() => setSettle(d)}><ArrowLeftRight size={13} /> Settle</button>
+                  )}
+                </div>
+              </motion.div>
             );
           })}
         </div>
       )}
 
-      <Modal open={open} onClose={() => setOpen(false)} title={edit ? 'Edit driver' : 'Add driver'}>
+      <Modal open={open} onClose={() => setOpen(false)} title={edit ? `Edit ${edit.name}` : 'Add driver'}>
         <DriverForm initial={edit} onSaved={() => { setOpen(false); mutate(); }} />
       </Modal>
       <Modal open={!!settle} onClose={() => setSettle(null)} title={`Settle with ${settle?.name ?? ''}`}>
@@ -101,8 +147,8 @@ function DriverForm({ initial, onSaved }: { initial: Driver | null; onSaved: () 
         <Field label="Licence number"><input className="input" value={f.license_number} onChange={(e) => set('license_number', e.target.value)} /></Field>
         <Field label="Licence expiry"><input type="date" className="input" value={f.license_expiry} onChange={(e) => set('license_expiry', e.target.value)} /></Field>
       </div>
-      {initial && <ActiveToggle checked={f.is_active} onChange={(v) => set('is_active', v)} />}
-      <div className="flex justify-end"><button className="btn-primary w-full sm:w-auto" disabled={loading}>{loading ? 'Saving…' : 'Save'}</button></div>
+      {initial && <Switch checked={f.is_active} onChange={(v) => set('is_active', v)} label="Active" description="Inactive drivers are hidden when creating trips." />}
+      <button className="btn-primary w-full" disabled={loading}>{loading ? 'Saving…' : 'Save driver'}</button>
     </form>
   );
 }
@@ -110,7 +156,7 @@ function DriverForm({ initial, onSaved }: { initial: Driver | null; onSaved: () 
 /** Records cash that clears (part of) a driver's balance. */
 function SettleForm({ driver, onSaved }: { driver: Driver; onSaved: () => void }) {
   const bal = Number(driver.balance) || 0;
-  const [direction, setDirection] = useState(bal > 0 ? 'paid_to_driver' : 'received_from_driver');
+  const [direction, setDirection] = useState<'paid_to_driver' | 'received_from_driver'>(bal > 0 ? 'paid_to_driver' : 'received_from_driver');
   const [amount, setAmount] = useState(String(Math.abs(bal)));
   const [settle_date, setDate] = useState(today);
   const [note, setNote] = useState('');
@@ -125,26 +171,23 @@ function SettleForm({ driver, onSaved }: { driver: Driver; onSaved: () => void }
   }
   return (
     <form onSubmit={submit} className="space-y-4">
-      <p className="text-sm text-zinc-500">
-        Current balance: <span className={bal > 0 ? 'text-emerald-600' : 'text-red-600'}>
-          {bal > 0 ? `we owe ${inr(bal)}` : `driver owes us ${inr(-bal)}`}</span>
-      </p>
-      <Field label="Direction" required>
-        <Select value={direction} onChange={(e) => setDirection(e.target.value)}>
-          <option value="paid_to_driver">We paid the driver</option>
-          <option value="received_from_driver">Driver paid us back</option>
-        </Select>
-      </Field>
+      <div className={cn('rounded-xl p-3 text-sm', bal > 0 ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800')}>
+        Current balance: <b>{bal > 0 ? `we owe ${inr(bal)}` : `driver owes us ${inr(-bal)}`}</b>
+      </div>
+      <Segmented full value={direction} onChange={setDirection} options={[
+        { value: 'paid_to_driver', label: 'We paid driver' },
+        { value: 'received_from_driver', label: 'Driver paid us' },
+      ]} />
       <div className="grid grid-cols-2 gap-3">
         <Field label="Amount (₹)" required>
-          <input type="number" inputMode="decimal" min={0} step="any" className="input" required value={amount} onChange={(e) => setAmount(e.target.value)} />
+          <input type="number" inputMode="decimal" min={0} step="any" className="input text-base font-semibold" required value={amount} onChange={(e) => setAmount(e.target.value)} />
         </Field>
         <Field label="Date" required>
           <input type="date" className="input" required value={settle_date} onChange={(e) => setDate(e.target.value)} />
         </Field>
       </div>
-      <Field label="Note"><input className="input" value={note} onChange={(e) => setNote(e.target.value)} /></Field>
-      <div className="flex justify-end"><button className="btn-primary w-full sm:w-auto" disabled={loading}>{loading ? 'Saving…' : 'Record settlement'}</button></div>
+      <Field label="Note"><input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional" /></Field>
+      <button className="btn-primary w-full" disabled={loading}>{loading ? 'Saving…' : 'Record settlement'}</button>
     </form>
   );
 }
