@@ -1,5 +1,5 @@
 import {
-  Fuel, HandCoins, Ticket, Utensils, Gavel, SquareParking, PackageOpen, CircleDot, Wrench, Ellipsis,
+  Fuel, Ticket, Utensils, Gavel, SquareParking, PackageOpen, CircleDot, Wrench, Ellipsis,
   type LucideIcon,
 } from 'lucide-react';
 import type { Category, Status } from './types';
@@ -16,7 +16,6 @@ export const AXIS = '#a1a1aa';
 
 export const CATEGORY: Record<Category, { label: string; icon: LucideIcon; tint: string }> = {
   diesel: { label: 'Diesel', icon: Fuel, tint: 'bg-blue-50 text-blue-600' },
-  advance: { label: 'Advance', icon: HandCoins, tint: 'bg-violet-50 text-violet-600' },
   toll: { label: 'Toll', icon: Ticket, tint: 'bg-orange-50 text-orange-600' },
   food: { label: 'Food / batta', icon: Utensils, tint: 'bg-amber-50 text-amber-600' },
   fine: { label: 'Fine', icon: Gavel, tint: 'bg-red-50 text-red-600' },
@@ -28,7 +27,7 @@ export const CATEGORY: Record<Category, { label: string; icon: LucideIcon; tint:
 };
 
 /** Fixed color per category (identity follows the entity, not its rank). Past 7 slots -> gray. */
-const CATEGORY_ORDER: Category[] = ['diesel', 'toll', 'repair', 'food', 'tyre', 'loading_unloading', 'parking', 'fine', 'other', 'advance'];
+const CATEGORY_ORDER: Category[] = ['diesel', 'toll', 'repair', 'food', 'tyre', 'loading_unloading', 'parking', 'fine', 'other'];
 export const categoryColor = (c: Category) => {
   const i = CATEGORY_ORDER.indexOf(c);
   return i >= 0 && i < SERIES.length ? SERIES[i] : OTHER;

@@ -49,7 +49,7 @@ export default function LoginPage() {
             className="mt-8 space-y-3 text-sm text-zinc-300">
             {[
               [TrendingUp, 'Live profit on every trip'],
-              [Fuel, 'Diesel, tolls and advances tracked automatically'],
+              [Fuel, 'Diesel, tolls and repairs tracked automatically'],
               [ShieldCheck, 'Never miss an insurance or permit renewal'],
             ].map(([Icon, text]) => {
               const I = Icon as typeof TrendingUp;

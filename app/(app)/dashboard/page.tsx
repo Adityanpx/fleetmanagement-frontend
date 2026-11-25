@@ -15,7 +15,6 @@ import FilterBar, { defaultFilters, type Filters } from '@/components/FilterBar'
 import StatTile from '@/components/ui/StatTile';
 import ErrorState from '@/components/ui/ErrorState';
 import PageHeader from '@/components/ui/PageHeader';
-import Avatar from '@/components/ui/Avatar';
 import { SkeletonStats, SkeletonChart } from '@/components/ui/Skeleton';
 import { Stagger, StaggerItem } from '@/components/ui/Motion';
 import ChartCard from '@/components/charts/ChartCard';
@@ -115,7 +114,7 @@ export default function Dashboard() {
 
           {/* Expense breakdown + profit by vehicle */}
           <div className="grid gap-6 lg:grid-cols-2">
-            <ChartCard title="Where the money goes" subtitle="Owner-paid expenses by category (advances excluded)">
+            <ChartCard title="Where the money goes" subtitle="Owner-paid expenses by category">
               <SegmentedBar thick segments={data.expensesByCategory.map((r) => {
                 const Icon = CATEGORY[r.category].icon;
                 return { key: r.category, label: CATEGORY[r.category].label, value: Number(r.total), color: categoryColor(r.category),
@@ -140,31 +139,11 @@ export default function Dashboard() {
             </ChartCard>
           </div>
 
-          {/* Alerts + driver dues */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <ChartCard title="Document alerts" subtitle="Expired or expiring in 30 days">
-              <ExpiryList vehicles={data.documentExpiries} />
-            </ChartCard>
-            <ChartCard title="Driver balances" subtitle="Advances vs money they spent for us"
-              action={<Link href="/drivers" className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700">Settle <ArrowRight size={13} /></Link>}>
-              {data.driverDues.length === 0 ? <Empty text="All drivers are settled." icon={<ShieldCheck size={18} />} /> : (
-                <ul className="space-y-1">
-                  {data.driverDues.map((d) => {
-                    const bal = Number(d.balance);
-                    return (
-                      <li key={d.id} className="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-zinc-50">
-                        <Avatar name={d.name} seed={d.id} size="sm" />
-                        <span className="flex-1 truncate text-sm font-medium">{d.name}</span>
-                        <span className={cn('chip tabular-nums', bal >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700')}>
-                          {bal >= 0 ? `We owe ${inr(bal)}` : `Owes us ${inr(-bal)}`}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </ChartCard>
-          </div>
+          {/* Alerts */}
+          <ChartCard title="Document alerts" subtitle="Expired or expiring in 30 days"
+            action={<Link href="/vehicles" className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700">Vehicles <ArrowRight size={13} /></Link>}>
+            <ExpiryList vehicles={data.documentExpiries} />
+          </ChartCard>
         </div>
       )}
     </>
@@ -230,7 +209,7 @@ function RunningList({ trips }: { trips: Trip[] }) {
                 </span>
                 <span className="tabular-nums text-zinc-500">{inr(t.owner_cost)} <span className="text-xs text-zinc-400">spent</span></span>
               </div>
-              <p className="mt-0.5 truncate pl-4 text-xs text-zinc-500">{t.start_location} → {t.expected_end_location || '—'}{t.driver_name ? ` · ${t.driver_name}` : ''}</p>
+              <p className="mt-0.5 truncate pl-4 text-xs text-zinc-500">{t.start_location} → {t.expected_end_location || '—'}{t.company_name ? ` · ${t.company_name}` : ''}</p>
               <div className="mt-2 flex items-center gap-3 pl-4">
                 <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-100">
                   <motion.div className={cn('h-full rounded-full', overdue ? 'bg-red-500' : 'bg-blue-500')}

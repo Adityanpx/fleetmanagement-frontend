@@ -9,17 +9,17 @@ import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import Switch from '@/components/ui/Switch';
 import { Truck, MapPin, IndianRupee } from 'lucide-react';
-import type { Vehicle, Driver, Company, Trip } from '@/lib/types';
+import type { Vehicle, Company, Trip } from '@/lib/types';
 
 interface FormState {
-  vehicle_id: string; driver_id: string; company_id: string; cargo: string; quantity: string;
+  vehicle_id: string; company_id: string; cargo: string; quantity: string;
   start_date: string; start_location: string; expected_end_date: string; expected_end_location: string;
   start_odometer: string; freight_amount: string; deduct_company_diesel: boolean; notes: string;
 }
 
 function fromTrip(t?: Trip): FormState {
   return {
-    vehicle_id: str(t?.vehicle_id), driver_id: str(t?.driver_id), company_id: str(t?.company_id),
+    vehicle_id: str(t?.vehicle_id), company_id: str(t?.company_id),
     cargo: str(t?.cargo), quantity: str(t?.quantity),
     start_date: t?.start_date || today(), start_location: str(t?.start_location),
     expected_end_date: str(t?.expected_end_date), expected_end_location: str(t?.expected_end_location),
@@ -34,7 +34,6 @@ const usable = <T extends { id: number; is_active: boolean }>(list: T[] | undefi
 
 export default function TripForm({ initial, onSaved }: { initial?: Trip; onSaved: (t: Trip) => void }) {
   const { data: vehicles } = useSWR<Vehicle[]>('/vehicles', fetcher);
-  const { data: drivers } = useSWR<Driver[]>('/drivers', fetcher);
   const { data: companies } = useSWR<Company[]>('/companies', fetcher);
 
   const [f, setF] = useState<FormState>(() => fromTrip(initial));
@@ -56,7 +55,6 @@ export default function TripForm({ initial, onSaved }: { initial?: Trip; onSaved
     // Only editable fields are sent; empty optional values become null.
     const payload = {
       vehicle_id: Number(f.vehicle_id),
-      driver_id: numOrNull(f.driver_id),
       company_id: numOrNull(f.company_id),
       cargo: orNull(f.cargo.trim()),
       quantity: numOrNull(f.quantity),
@@ -80,7 +78,6 @@ export default function TripForm({ initial, onSaved }: { initial?: Trip; onSaved
   }
 
   const vehicleList = usable(vehicles, f.vehicle_id);
-  const driverList = usable(drivers, f.driver_id);
   const companyList = usable(companies, f.company_id);
 
   const section = 'rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4';
@@ -111,13 +108,7 @@ export default function TripForm({ initial, onSaved }: { initial?: Trip; onSaved
               {companyList?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </Select>
           </Field>
-          <Field label="Driver">
-            <Select value={f.driver_id} onChange={(e) => set('driver_id', e.target.value)}>
-              <option value="">No driver</option>
-              {driverList?.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </Select>
-          </Field>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:col-span-2">
             <Field label="Cargo / grade">
               <input className="input" value={f.cargo} onChange={(e) => set('cargo', e.target.value)} placeholder="OPC 53" />
             </Field>

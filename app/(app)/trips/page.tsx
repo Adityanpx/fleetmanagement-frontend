@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { AnimatePresence, motion } from 'motion/react';
-import { Plus, Truck, Calendar, User, Building2, ChevronRight } from 'lucide-react';
+import { Plus, Truck, Calendar, Building2, ChevronRight } from 'lucide-react';
 import { fetcher } from '@/lib/api';
 import { inr, fmtDate, cn } from '@/lib/format';
 import type { Trip, Status } from '@/lib/types';
@@ -30,7 +30,7 @@ export default function TripsPage() {
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return (trips ?? []).filter((t) => (tab === 'all' || t.status === tab) && (!needle ||
-      [t.vehicle_number, t.start_location, t.expected_end_location, t.actual_end_location, t.company_name, t.driver_name, t.cargo]
+      [t.vehicle_number, t.start_location, t.expected_end_location, t.actual_end_location, t.company_name, t.cargo]
         .some((x) => x?.toLowerCase().includes(needle))));
   }, [trips, tab, q]);
 
@@ -111,7 +111,6 @@ function TripCard({ t }: { t: Trip }) {
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-400">
             <span className="flex items-center gap-1"><Calendar size={12} />{fmtDate(t.start_date)}</span>
             <span className="flex items-center gap-1"><Building2 size={12} />{t.company_name || 'No company'}</span>
-            <span className="flex items-center gap-1"><User size={12} />{t.driver_name || 'No driver'}</span>
           </div>
         </div>
 

@@ -32,8 +32,8 @@ function dieselAmount(litres: string, rate: string, fallback: string) {
   return String(Math.round(Number(litres) * Number(rate) * 100) / 100);
 }
 
-export default function ExpenseForm({ tripId, tripHasDriver, tripCompanyId, deductsDiesel, initial, onSaved }: {
-  tripId: number; tripHasDriver: boolean; tripCompanyId?: number | null; deductsDiesel: boolean;
+export default function ExpenseForm({ tripId, tripCompanyId, deductsDiesel, initial, onSaved }: {
+  tripId: number; tripCompanyId?: number | null; deductsDiesel: boolean;
   initial?: Expense | null; onSaved: () => void;
 }) {
   const { data: companies } = useSWR<Company[]>('/companies', fetcher);
@@ -42,15 +42,12 @@ export default function ExpenseForm({ tripId, tripHasDriver, tripCompanyId, dedu
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setF((p) => ({ ...p, [k]: v }));
 
   const isDiesel = f.category === 'diesel';
-  const isAdvance = f.category === 'advance';
   const needsDetail = ['tyre', 'repair', 'fine', 'other'].includes(f.category);
   const autoAmount = isDiesel && f.litres !== '' && f.rate !== '';
 
   function setCategory(category: Category) {
     setF((p) => ({
       ...p, category,
-      // An advance is cash given TO the driver, so it can't be paid with the driver's own money.
-      paid_by: category === 'advance' && p.paid_by === 'driver' ? 'ourselves' : p.paid_by,
       amount: category === 'diesel' ? dieselAmount(p.litres, p.rate, p.amount) : p.amount,
     }));
   }
@@ -59,8 +56,6 @@ export default function ExpenseForm({ tripId, tripHasDriver, tripCompanyId, dedu
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (f.paid_by === 'driver' && !tripHasDriver) { toast.error('This trip has no driver.'); return; }
-    if (isAdvance && !tripHasDriver) { toast.error('An advance needs a driver on the trip.'); return; }
     setLoading(true);
     const payload = {
       category: f.category,
@@ -87,7 +82,7 @@ export default function ExpenseForm({ tripId, tripHasDriver, tripCompanyId, dedu
     }
   }
 
-  const order: Category[] = ['diesel', 'advance', 'toll', 'food', 'loading_unloading', 'parking', 'tyre', 'repair', 'fine', 'other'];
+  const order: Category[] = ['diesel', 'toll', 'food', 'loading_unloading', 'parking', 'tyre', 'repair', 'fine', 'other'];
 
   return (
     <form onSubmit={submit} className="space-y-5">
@@ -98,20 +93,16 @@ export default function ExpenseForm({ tripId, tripHasDriver, tripCompanyId, dedu
           {order.map((c) => {
             const m = CATEGORY[c];
             const active = f.category === c;
-            const disabled = c === 'advance' && !tripHasDriver;
             return (
-              <button key={c} type="button" disabled={disabled} onClick={() => setCategory(c)}
-                title={disabled ? 'Needs a driver on the trip' : m.label}
+              <button key={c} type="button" onClick={() => setCategory(c)} title={m.label}
                 className={cn('relative flex flex-col items-center gap-1 rounded-xl border px-1 py-2.5 text-[11px] font-medium transition active:scale-95',
-                  active ? 'border-indigo-300 bg-indigo-50 text-indigo-700 shadow-glow' : 'border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50',
-                  disabled && 'cursor-not-allowed opacity-40')}>
+                  active ? 'border-indigo-300 bg-indigo-50 text-indigo-700 shadow-glow' : 'border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50')}>
                 <span className={cn('grid h-8 w-8 place-items-center rounded-lg transition', active ? 'bg-white text-indigo-600' : m.tint)}><m.icon size={16} /></span>
                 <span className="w-full truncate text-center">{m.label.split(' / ')[0]}</span>
               </button>
             );
           })}
         </div>
-        {!tripHasDriver && <p className="mt-1.5 text-xs text-zinc-400">Advance needs a driver on the trip.</p>}
       </div>
 
       <AnimatePresence initial={false} mode="popLayout">
@@ -152,19 +143,14 @@ export default function ExpenseForm({ tripId, tripHasDriver, tripCompanyId, dedu
 
       <div>
         <label className="label">Paid by</label>
-        <Segmented full value={f.paid_by} onChange={(v) => {
-          if (v === 'driver' && (!tripHasDriver || isAdvance)) { toast.error(isAdvance ? 'An advance can’t be paid by the driver.' : 'This trip has no driver.'); return; }
-          set('paid_by', v);
-        }} options={[
+        <Segmented full value={f.paid_by} onChange={(v) => set('paid_by', v)} options={[
           { value: 'ourselves', label: 'Ourselves' },
           { value: 'company', label: 'Company' },
-          { value: 'driver', label: 'Driver' },
         ]} />
         <p className="mt-1.5 text-xs text-zinc-500">
           {isDiesel && f.paid_by === 'company'
             ? (deductsDiesel ? 'Deducted from this trip’s freight.' : 'This trip does not deduct company diesel, so it costs nothing.')
-            : f.paid_by === 'driver' ? 'Driver’s own money — added to what we owe them.'
-              : f.paid_by === 'company' ? 'Paid by the company; not our cost.' : 'Paid from our pocket — counts as trip cost.'}
+            : f.paid_by === 'company' ? 'Paid by the company; not our cost.' : 'Paid from our pocket — counts as trip cost.'}
         </p>
       </div>
 

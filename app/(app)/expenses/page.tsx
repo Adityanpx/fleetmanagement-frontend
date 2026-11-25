@@ -26,7 +26,6 @@ interface ExpensesReport { rows: Row[]; byCategory: { category: Category; total:
 const PAID_BY: { key: PaidBy; label: string; color: string }[] = [
   { key: 'ourselves', label: 'Ourselves', color: SERIES[0] },
   { key: 'company', label: 'Company', color: SERIES[1] },
-  { key: 'driver', label: 'Driver', color: SERIES[2] },
 ];
 
 export default function ExpensesPage() {
@@ -65,7 +64,7 @@ export default function ExpensesPage() {
               </div>
               <p className="mt-6 text-sm text-zinc-400">{rows.length} entries{data.rows.length !== rows.length ? ` (of ${data.rows.length})` : ''}</p>
             </div>
-            <ChartCard className="lg:col-span-2" title="By category" subtitle="All money out, including advances and company-paid">
+            <ChartCard className="lg:col-span-2" title="By category" subtitle="All money out, including company-paid">
               <SegmentedBar thick legend="inline" segments={data.byCategory.map((c) => ({
                 key: c.category, label: CATEGORY[c.category].label, value: Number(c.total), color: categoryColor(c.category),
               }))} />

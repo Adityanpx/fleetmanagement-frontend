@@ -1,6 +1,6 @@
 # BulkerTrack — Fleet Management Frontend
 
-Web app for managing a bulker truck fleet: trips, expenses, freight payments, driver balances and reports.
+Web app for managing a bulker truck fleet: trips, expenses, freight payments and reports.
 Built with Next.js (App Router, TypeScript), Tailwind CSS, SWR and Recharts. Mobile-first, with a sidebar layout on desktop.
 
 It talks only to the BulkerTrack backend API.
@@ -28,14 +28,13 @@ The backend's `CORS_ORIGIN` must include this app's URL.
 
 ## Features
 
-- **Dashboard** — income, cost, profit, pending, monthly profit chart, expenses by category, profit by vehicle, running trips, document expiry alerts, driver balances
+- **Dashboard** — income, cost, profit, pending, monthly profit chart, expenses by category, profit by vehicle, running trips, document expiry alerts
 - **Trips** — create, edit, change status (complete needs end odometer, cancel needs a reason), delete
 - **Trip detail** — category-based expenses (diesel auto-calculates litres × rate), payments received, live profit/pending
 - **Company diesel** — per-trip switch to deduct company-given diesel from freight, defaulting from the company
-- **Drivers** — advances and own-money spends roll up into a balance; record settlements
 - **Vehicles / Companies** — CRUD; records with trips are deactivated instead of deleted
 - **Expenses** — ledger across all trips with category totals
-- **Reports** — trips, vehicles, fuel (km/L, ₹/km), drivers, companies; filter by period, vehicle, driver, company
+- **Reports** — trips, vehicles, fuel (km/L, ₹/km), companies; filter by period, vehicle, company
 
 ## Structure
 

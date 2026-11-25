@@ -2,7 +2,7 @@ import toast from 'react-hot-toast';
 import { api } from './api';
 import type { DeleteResult } from './types';
 
-/** Deletes a vehicle/driver/company; the backend deactivates instead if it has trips. */
+/** Deletes a vehicle/company; the backend deactivates instead if it has trips. */
 export async function removeRecord(path: string, noun: string) {
   try {
     const res: DeleteResult = await api.del(path);

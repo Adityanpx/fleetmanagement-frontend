@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
-  LayoutDashboard, Truck, Receipt, Building2, Users, Bus, BarChart3, LogOut, X, Plus, LayoutGrid,
+  LayoutDashboard, Truck, Receipt, Building2, Bus, BarChart3, LogOut, X, Plus, LayoutGrid,
 } from 'lucide-react';
 import { clearToken } from '@/lib/auth';
 import { cn } from '@/lib/format';
@@ -17,7 +17,6 @@ const nav = [
 ];
 const manage = [
   { href: '/vehicles', label: 'Vehicles', icon: Bus },
-  { href: '/drivers', label: 'Drivers', icon: Users },
   { href: '/companies', label: 'Companies', icon: Building2 },
 ];
 

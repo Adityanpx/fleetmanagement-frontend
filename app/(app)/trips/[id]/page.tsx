@@ -6,7 +6,7 @@ import useSWR from 'swr';
 import toast from 'react-hot-toast';
 import { motion } from 'motion/react';
 import {
-  ChevronLeft, Pencil, Trash2, Plus, PlayCircle, Flag, Ban, Building2, User, Package, Gauge, Calendar, Banknote, Receipt, RotateCcw,
+  ChevronLeft, Pencil, Trash2, Plus, PlayCircle, Flag, Ban, Building2, Package, Gauge, Calendar, Banknote, Receipt, RotateCcw,
 } from 'lucide-react';
 import { api, fetcher } from '@/lib/api';
 import { inr, fmtDate, today, str, orNull, numOrNull, daysBetween, pct, cn } from '@/lib/format';
@@ -84,7 +84,7 @@ export default function TripDetailPage() {
 
   // Owner-borne costs by category (what profit is reduced by)
   const costByCat = new Map<Category, number>();
-  trip.expenses.filter((e) => e.category !== 'advance' && e.paid_by !== 'company')
+  trip.expenses.filter((e) => e.paid_by === 'ourselves')
     .forEach((e) => costByCat.set(e.category, (costByCat.get(e.category) || 0) + Number(e.amount)));
 
   return (
@@ -105,7 +105,6 @@ export default function TripDetailPage() {
             </div>
             <div className="mt-2 flex flex-wrap gap-2 text-xs">
               <MetaChip icon={Building2}>{trip.company_name || 'No company'}</MetaChip>
-              <MetaChip icon={User}>{trip.driver_name || 'No driver'}</MetaChip>
               {trip.cargo && <MetaChip icon={Package}>{trip.cargo}{trip.quantity ? ` · ${trip.quantity} t` : ''}</MetaChip>}
               {trip.km != null && <MetaChip icon={Gauge}>{trip.km} km</MetaChip>}
             </div>
@@ -172,7 +171,7 @@ export default function TripDetailPage() {
         </ChartCard>
 
         {/* Cost breakdown */}
-        <ChartCard className="lg:col-span-3" title="Cost breakdown" subtitle="What this trip cost us (company-paid & advances excluded)">
+        <ChartCard className="lg:col-span-3" title="Cost breakdown" subtitle="What this trip cost us (company-paid excluded)">
           <SegmentedBar thick segments={[...costByCat.entries()].sort((a, b) => b[1] - a[1]).map(([c, v]) => {
             const Icon = CATEGORY[c].icon;
             return { key: c, label: CATEGORY[c].label, value: v, color: categoryColor(c), icon: <Icon size={14} className="text-zinc-400" /> };
@@ -185,7 +184,7 @@ export default function TripDetailPage() {
         action={<button type="button" className="btn-primary" onClick={() => { setEditExp(null); setExpOpen(true); }}><Plus size={15} /> Add expense</button>}>
         {trip.expenses.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-10 text-center text-sm text-zinc-400">
-            <Receipt size={22} /> No expenses yet. Add diesel, tolls, advances and more.
+            <Receipt size={22} /> No expenses yet. Add diesel, tolls, repairs and more.
           </div>
         ) : (
           <ul className="relative space-y-1 before:absolute before:bottom-4 before:left-[19px] before:top-4 before:w-px before:bg-zinc-100">
@@ -231,7 +230,7 @@ export default function TripDetailPage() {
 
       {/* Modals (each form mounts fresh when its modal opens) */}
       <Modal open={expOpen} onClose={() => setExpOpen(false)} title={editExp ? 'Edit expense' : 'Add expense'} subtitle={`${trip.vehicle_number} · ${trip.start_location} → ${dest}`}>
-        <ExpenseForm tripId={trip.id} tripHasDriver={!!trip.driver_id} tripCompanyId={trip.company_id}
+        <ExpenseForm tripId={trip.id} tripCompanyId={trip.company_id}
           deductsDiesel={trip.deduct_company_diesel}
           initial={editExp} onSaved={() => { setExpOpen(false); mutate(); }} />
       </Modal>
@@ -257,12 +256,12 @@ export default function TripDetailPage() {
   );
 }
 
-function MetaChip({ icon: Icon, children }: { icon: typeof User; children: React.ReactNode }) {
+function MetaChip({ icon: Icon, children }: { icon: typeof Building2; children: React.ReactNode }) {
   return <span className="chip bg-white/80 text-zinc-600 ring-1 ring-inset ring-zinc-200"><Icon size={12} className="text-zinc-400" />{children}</span>;
 }
 
 function PaidByChip({ paidBy }: { paidBy: Expense['paid_by'] }) {
-  const m = { ourselves: ['Ours', 'bg-zinc-100 text-zinc-600'], company: ['Company', 'bg-blue-50 text-blue-700'], driver: ['Driver', 'bg-violet-50 text-violet-700'] }[paidBy];
+  const m = { ourselves: ['Ours', 'bg-zinc-100 text-zinc-600'], company: ['Company', 'bg-blue-50 text-blue-700'] }[paidBy];
   return <span className={cn('rounded-md px-1.5 py-px text-[11px] font-medium', m[1])}>{m[0]}</span>;
 }
 

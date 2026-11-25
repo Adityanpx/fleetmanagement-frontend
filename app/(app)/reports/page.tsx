@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import useSWR from 'swr';
 import { AnimatePresence, motion } from 'motion/react';
-import { Download, Truck, Bus, Fuel, Users, Building2 } from 'lucide-react';
+import { Download, Truck, Bus, Fuel, Building2 } from 'lucide-react';
 import { fetcher } from '@/lib/api';
 import { inr, fmtDate, cn } from '@/lib/format';
 import { toQuery } from '@/lib/periods';
@@ -16,18 +16,16 @@ import ChartCard from '@/components/charts/ChartCard';
 import ProfitBars from '@/components/charts/ProfitBars';
 import HBars from '@/components/charts/HBars';
 
-type Tab = 'trips' | 'vehicles' | 'fuel' | 'drivers' | 'companies';
+type Tab = 'trips' | 'vehicles' | 'fuel' | 'companies';
 const TABS: { value: Tab; label: string; icon: React.ReactNode }[] = [
   { value: 'trips', label: 'Trips', icon: <Truck size={14} /> }, { value: 'vehicles', label: 'Vehicles', icon: <Bus size={14} /> },
-  { value: 'fuel', label: 'Fuel', icon: <Fuel size={14} /> }, { value: 'drivers', label: 'Drivers', icon: <Users size={14} /> },
-  { value: 'companies', label: 'Companies', icon: <Building2 size={14} /> },
+  { value: 'fuel', label: 'Fuel', icon: <Fuel size={14} /> }, { value: 'companies', label: 'Companies', icon: <Building2 size={14} /> },
 ];
 
 type Num = number;
-interface TripRow { id: number; start_date: string; status: string; vehicle: string; driver: string | null; company: string | null; freight_amount: Num; company_diesel: Num; income: Num; owner_cost: Num; profit: Num; received: Num; pending: Num; km: Num | null }
+interface TripRow { id: number; start_date: string; status: string; vehicle: string; company: string | null; freight_amount: Num; company_diesel: Num; income: Num; owner_cost: Num; profit: Num; received: Num; pending: Num; km: Num | null }
 interface VehicleRow { id: number; number: string; brand: string; trips: Num; income: Num; owner_cost: Num; profit: Num; km: Num }
 interface FuelRow { id: number; number: string; brand: string; litres: Num; diesel_cost: Num; km: Num; km_per_litre: Num | null; cost_per_km: Num | null }
-interface DriverRow { id: number; name: string; phone: string | null; advances: Num; own_spend: Num; net_settle: Num; balance: Num }
 interface CompanyRow { id: number; name: string; trips: Num; freight: Num; diesel_given: Num; income: Num; received: Num; pending: Num }
 interface Report<R> { rows: R[]; totals?: { income: Num; owner_cost: Num; profit: Num; pending: Num } }
 
@@ -45,10 +43,9 @@ export default function ReportsPage() {
 
   return (
     <>
-      <PageHeader title="Reports" subtitle="Drill into trips, vehicles, fuel, drivers and companies" />
+      <PageHeader title="Reports" subtitle="Drill into trips, vehicles, fuel and companies" />
       <Segmented value={tab} onChange={setTab} options={TABS} className="mb-4" />
       <FilterBar onChange={setFilters} showStatus={tab === 'trips'} />
-      {tab === 'drivers' && <p className="-mt-3 mb-4 text-xs text-zinc-400">Driver balances are all-time; period filters don&apos;t apply.</p>}
 
       {error ? <ErrorState error={error} onRetry={() => mutate()} /> : isLoading || !data ? <SkeletonChart /> : (
         <AnimatePresence mode="wait">
@@ -56,7 +53,6 @@ export default function ReportsPage() {
             {tab === 'trips' && <TripsReport d={data as Report<TripRow>} />}
             {tab === 'vehicles' && <VehiclesReport rows={(data as Report<VehicleRow>).rows} />}
             {tab === 'fuel' && <FuelReport rows={(data as Report<FuelRow>).rows} />}
-            {tab === 'drivers' && <DriversReport rows={(data as Report<DriverRow>).rows} />}
             {tab === 'companies' && <CompaniesReport rows={(data as Report<CompanyRow>).rows} />}
           </motion.div>
         </AnimatePresence>
@@ -128,26 +124,6 @@ function FuelReport({ rows }: { rows: FuelRow[] }) {
         { h: 'Km', v: (r) => n(r.km), csv: (r) => r.km, num: true, foot: n(km) },
         { h: 'Km/L', v: (r) => n(r.km_per_litre, 2), csv: (r) => r.km_per_litre ?? '', num: true },
         { h: '₹/km', v: (r) => (r.cost_per_km == null ? '—' : `₹${n(r.cost_per_km, 2)}`), csv: (r) => r.cost_per_km ?? '', num: true },
-      ]} />
-  );
-}
-
-function DriversReport({ rows }: { rows: DriverRow[] }) {
-  return (
-    <Layout
-      summary={[['Advances', inr(sum(rows, 'advances'))], ['Own spend', inr(sum(rows, 'own_spend'))], ['Net balance', <Money key="b" v={sum(rows, 'balance')} />]]}
-      chart={<ChartCard title="Driver balances" subtitle="Green: we owe them · Red: they owe us">
-        <HBars signed rows={rows.filter((r) => Number(r.balance) !== 0).map((r) => ({ key: r.id, label: r.name, value: Number(r.balance) }))}
-          empty="All drivers are settled." />
-      </ChartCard>}
-      file="drivers-report.csv" rows={rows}
-      cols={[
-        { h: 'Driver', v: (r) => <b className="font-medium">{r.name}</b>, csv: (r) => r.name, foot: 'Total' },
-        { h: 'Advances', v: (r) => inr(r.advances), csv: (r) => r.advances, num: true, foot: inr(sum(rows, 'advances')) },
-        { h: 'Own spend', v: (r) => inr(r.own_spend), csv: (r) => r.own_spend, num: true, foot: inr(sum(rows, 'own_spend')) },
-        { h: 'Settled', v: (r) => inr(r.net_settle), csv: (r) => r.net_settle, num: true, foot: inr(sum(rows, 'net_settle')) },
-        { h: 'Balance', v: (r) => <span className={Number(r.balance) > 0 ? 'text-emerald-600' : Number(r.balance) < 0 ? 'text-red-600' : 'text-zinc-400'}>
-          {Number(r.balance) > 0 ? `We owe ${inr(r.balance)}` : Number(r.balance) < 0 ? `Owes ${inr(-r.balance)}` : 'Settled'}</span>, csv: (r) => r.balance, num: true },
       ]} />
   );
 }
