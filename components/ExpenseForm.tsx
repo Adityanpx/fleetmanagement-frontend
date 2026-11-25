@@ -1,0 +1,169 @@
+'use client';
+import { useState } from 'react';
+import useSWR from 'swr';
+import toast from 'react-hot-toast';
+import { api, fetcher } from '@/lib/api';
+import { today, str, orNull, numOrNull } from '@/lib/format';
+import { Field } from '@/components/ui/Field';
+import { Select } from '@/components/ui/Select';
+import type { Category, Company, Expense, PaidBy } from '@/lib/types';
+
+const CATS: { value: Category; label: string }[] = [
+  { value: 'advance', label: 'Advance to driver' }, { value: 'diesel', label: 'Diesel' },
+  { value: 'toll', label: 'Toll' }, { value: 'food', label: 'Food / batta' },
+  { value: 'fine', label: 'Fine' }, { value: 'parking', label: 'Parking' },
+  { value: 'loading_unloading', label: 'Loading / unloading' }, { value: 'tyre', label: 'Tyre' },
+  { value: 'repair', label: 'Repair / maintenance' }, { value: 'other', label: 'Other' },
+];
+
+interface FormState {
+  category: Category; amount: string; expense_date: string; paid_by: PaidBy; company_id: string;
+  mode: string; vendor_name: string; note: string; litres: string; rate: string;
+  fill_location: string; work_detail: string;
+}
+
+function fromExpense(e: Expense | null | undefined, tripCompanyId?: number | null): FormState {
+  return {
+    category: e?.category ?? 'diesel', amount: str(e?.amount), expense_date: e?.expense_date || today(),
+    paid_by: e?.paid_by ?? 'ourselves', company_id: str(e?.company_id ?? tripCompanyId),
+    mode: str(e?.mode), vendor_name: str(e?.vendor_name), note: str(e?.note),
+    litres: str(e?.litres), rate: str(e?.rate), fill_location: str(e?.fill_location), work_detail: str(e?.work_detail),
+  };
+}
+
+/** litres x rate, rounded to paise; '' when either is missing so manual entry stays possible. */
+function dieselAmount(litres: string, rate: string, fallback: string) {
+  if (litres === '' || rate === '') return fallback;
+  return String(Math.round(Number(litres) * Number(rate) * 100) / 100);
+}
+
+export default function ExpenseForm({ tripId, tripHasDriver, tripCompanyId, deductsDiesel, initial, onSaved }: {
+  tripId: number; tripHasDriver: boolean; tripCompanyId?: number | null; deductsDiesel: boolean;
+  initial?: Expense | null; onSaved: () => void;
+}) {
+  const { data: companies } = useSWR<Company[]>('/companies', fetcher);
+  const [f, setF] = useState<FormState>(() => fromExpense(initial, tripCompanyId));
+  const [loading, setLoading] = useState(false);
+  const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setF((p) => ({ ...p, [k]: v }));
+
+  const isDiesel = f.category === 'diesel';
+  const isAdvance = f.category === 'advance';
+  const needsDetail = ['tyre', 'repair', 'fine', 'other'].includes(f.category);
+  const autoAmount = isDiesel && f.litres !== '' && f.rate !== '';
+
+  function setCategory(category: Category) {
+    setF((p) => ({
+      ...p, category,
+      // An advance is cash given TO the driver, so it can't be paid with the driver's own money.
+      paid_by: category === 'advance' && p.paid_by === 'driver' ? 'ourselves' : p.paid_by,
+      amount: category === 'diesel' ? dieselAmount(p.litres, p.rate, p.amount) : p.amount,
+    }));
+  }
+  const setLitres = (litres: string) => setF((p) => ({ ...p, litres, amount: dieselAmount(litres, p.rate, p.amount) }));
+  const setRate = (rate: string) => setF((p) => ({ ...p, rate, amount: dieselAmount(p.litres, rate, p.amount) }));
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (f.paid_by === 'driver' && !tripHasDriver) { toast.error('This trip has no driver.'); return; }
+    if (isAdvance && !tripHasDriver) { toast.error('An advance needs a driver on the trip.'); return; }
+    setLoading(true);
+    const payload = {
+      category: f.category,
+      amount: Number(f.amount),
+      expense_date: f.expense_date,
+      paid_by: f.paid_by,
+      company_id: f.paid_by === 'company' ? numOrNull(f.company_id) ?? tripCompanyId ?? null : null,
+      mode: orNull(f.mode),
+      vendor_name: orNull(f.vendor_name.trim()),
+      note: orNull(f.note.trim()),
+      litres: isDiesel ? numOrNull(f.litres) : null,
+      rate: isDiesel ? numOrNull(f.rate) : null,
+      fill_location: isDiesel ? orNull(f.fill_location.trim()) : null,
+      work_detail: needsDetail ? orNull(f.work_detail.trim()) : null,
+    };
+    try {
+      if (initial) await api.put(`/expenses/${initial.id}`, payload);
+      else await api.post(`/trips/${tripId}/expenses`, payload);
+      toast.success(initial ? 'Expense updated' : 'Expense added');
+      onSaved();
+    } catch (err) {
+      toast.error((err as Error).message);
+      setLoading(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-4">
+      <Field label="Category" required>
+        <Select value={f.category} onChange={(e) => setCategory(e.target.value as Category)}>
+          {CATS.map((c) => (
+            <option key={c.value} value={c.value} disabled={c.value === 'advance' && !tripHasDriver}>
+              {c.label}{c.value === 'advance' && !tripHasDriver ? ' (needs a driver)' : ''}
+            </option>
+          ))}
+        </Select>
+      </Field>
+
+      {isDiesel && (
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Litres"><input type="number" inputMode="decimal" min={0} step="any" className="input" value={f.litres} onChange={(e) => setLitres(e.target.value)} /></Field>
+          <Field label="Rate (₹/L)"><input type="number" inputMode="decimal" min={0} step="any" className="input" value={f.rate} onChange={(e) => setRate(e.target.value)} /></Field>
+          <div className="col-span-2"><Field label="Fill location" required>
+            <input className="input" required value={f.fill_location} onChange={(e) => set('fill_location', e.target.value)} placeholder="Pump / place" /></Field></div>
+        </div>
+      )}
+
+      {needsDetail && (
+        <Field label={f.category === 'fine' ? 'Reason' : f.category === 'tyre' ? 'Tyre / work' : 'Details'} required={f.category === 'other'}>
+          <input className="input" required={f.category === 'other'} value={f.work_detail} onChange={(e) => set('work_detail', e.target.value)} />
+        </Field>
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Amount (₹)" required hint={autoAmount ? 'litres × rate' : undefined}>
+          <input type="number" inputMode="decimal" min={0} step="any" className="input" required value={f.amount}
+            onChange={(e) => set('amount', e.target.value)} readOnly={autoAmount} />
+        </Field>
+        <Field label="Date" required>
+          <input type="date" className="input" required value={f.expense_date} onChange={(e) => set('expense_date', e.target.value)} />
+        </Field>
+      </div>
+
+      <Field label="Paid by" required
+        hint={isDiesel && f.paid_by === 'company'
+          ? (deductsDiesel ? 'Deducted from this trip’s freight.' : 'This trip does not deduct company diesel, so it costs nothing.')
+          : f.paid_by === 'driver' ? 'Added to what we owe the driver.' : undefined}>
+        <Select value={f.paid_by} onChange={(e) => set('paid_by', e.target.value as PaidBy)}>
+          <option value="ourselves">Ourselves</option>
+          <option value="company">Company</option>
+          <option value="driver" disabled={!tripHasDriver || isAdvance}>Driver&apos;s own money (we owe back)</option>
+        </Select>
+      </Field>
+
+      {f.paid_by === 'company' && (
+        <Field label="Which company" required={!tripCompanyId}>
+          <Select value={f.company_id} required={!tripCompanyId} onChange={(e) => set('company_id', e.target.value)}>
+            <option value="">{tripCompanyId ? 'Trip company' : 'Select company'}</option>
+            {companies?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </Select>
+        </Field>
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Mode">
+          <Select value={f.mode} onChange={(e) => set('mode', e.target.value)}>
+            <option value="">—</option><option value="cash">Cash</option><option value="upi">UPI</option>
+            <option value="bank">Bank</option><option value="card">Fuel card</option>
+          </Select>
+        </Field>
+        <Field label="Vendor / name"><input className="input" value={f.vendor_name} onChange={(e) => set('vendor_name', e.target.value)} /></Field>
+      </div>
+
+      <Field label="Note"><input className="input" value={f.note} onChange={(e) => set('note', e.target.value)} /></Field>
+
+      <div className="flex justify-end">
+        <button className="btn-primary w-full sm:w-auto" disabled={loading}>{loading ? 'Saving…' : initial ? 'Save' : 'Add expense'}</button>
+      </div>
+    </form>
+  );
+}
