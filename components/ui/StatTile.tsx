@@ -22,7 +22,7 @@ export default function StatTile({
   const up = (delta ?? 0) >= 0;
   const good = up === upIsGood;
   return (
-    <div className="card card-hover group relative overflow-hidden p-4">
+    <div className="card card-hover group relative overflow-hidden p-3.5 sm:p-4">
       <div className="flex items-start justify-between gap-2">
         <p className="text-[13px] font-medium text-zinc-500">{label}</p>
         {Icon && (
@@ -32,7 +32,7 @@ export default function StatTile({
         )}
       </div>
       <AnimatedNumber value={value} format={format}
-        className={cn('mt-1 block text-[22px] font-semibold tracking-tight tabular-nums sm:text-2xl',
+        className={cn('mt-1 block text-[clamp(1.05rem,5.4vw,1.5rem)] font-semibold tracking-tight tabular-nums lg:text-2xl',
           tone === 'positive' && 'text-emerald-600', tone === 'negative' && 'text-red-600')} />
       <div className="mt-1.5 flex items-end justify-between gap-2">
         <div className="min-w-0 text-xs">

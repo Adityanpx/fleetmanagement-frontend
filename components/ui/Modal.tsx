@@ -26,7 +26,7 @@ export default function Modal({ open, onClose, title, subtitle, children, footer
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}
           onClick={onClose}>
           <motion.div role="dialog" aria-modal="true" aria-label={title}
-            className={`flex max-h-[92vh] w-full flex-col rounded-t-3xl bg-white shadow-pop sm:rounded-2xl ${wide ? 'max-w-2xl' : 'max-w-lg'}`}
+            className={`flex max-h-[92dvh] w-full flex-col rounded-t-3xl bg-white shadow-pop sm:rounded-2xl ${wide ? 'max-w-2xl' : 'max-w-lg'}`}
             initial={{ opacity: 0, y: 40, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.98 }} transition={{ type: 'spring', stiffness: 420, damping: 34 }}
             onClick={(e) => e.stopPropagation()}>
@@ -38,7 +38,7 @@ export default function Modal({ open, onClose, title, subtitle, children, footer
               </div>
               <button type="button" onClick={onClose} aria-label="Close" className="icon-btn -mr-2 -mt-1"><X size={18} /></button>
             </div>
-            <div className="overflow-y-auto px-5 pb-5">{children}</div>
+            <div className="overscroll-contain overflow-y-auto px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pb-5">{children}</div>
             {footer && <div className="flex justify-end gap-2 border-t border-zinc-100 px-5 py-4">{footer}</div>}
           </motion.div>
         </motion.div>

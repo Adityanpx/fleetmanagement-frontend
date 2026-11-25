@@ -69,7 +69,7 @@ export default function Dashboard() {
   return (
     <>
       <PageHeader eyebrow={greeting()} title="Fleet overview" subtitle="Money, trips and alerts across your fleet"
-        action={<Link href="/trips/new" className="btn-primary"><Plus size={16} /> New trip</Link>} />
+        action={<Link href="/trips/new" className="btn-primary hidden lg:inline-flex"><Plus size={16} /> New trip</Link>} />
       <FilterBar onChange={setFilters} />
 
       {error ? <ErrorState error={error} onRetry={() => mutate()} /> : isLoading || !data || !t ? (

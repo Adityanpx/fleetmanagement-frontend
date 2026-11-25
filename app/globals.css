@@ -37,6 +37,19 @@ body {
 }
 
 button:not(:disabled), [role="button"], summary { cursor: pointer; }
+
+/* Touch: no 300ms tap delay, no grey flash, no rubber-band reload on the app chrome. */
+html { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+a, button, input, select, textarea, label, [role="button"] { touch-action: manipulation; }
+body { overscroll-behavior-y: none; }
+
+/* Horizontal scrollers (tabs, chips) scroll without a visible bar. */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Room for the fixed mobile tab bar plus the iPhone home indicator. */
+.pb-tabbar { padding-bottom: calc(6.5rem + env(safe-area-inset-bottom)); }
+@media (min-width: 1024px) { .pb-tabbar { padding-bottom: 2.5rem; } }
 ::selection { background: rgb(99 102 241 / 0.18); }
 
 /* Slim, quiet scrollbars */
@@ -49,7 +62,7 @@ button:not(:disabled), [role="button"], summary { cursor: pointer; }
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-zinc-200/80 bg-white shadow-card;
+    @apply min-w-0 rounded-2xl border border-zinc-200/80 bg-white shadow-card;
   }
   .card-hover {
     @apply transition duration-200 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-lift;
@@ -60,7 +73,7 @@ button:not(:disabled), [role="button"], summary { cursor: pointer; }
   .label { @apply mb-1.5 block text-[13px] font-medium text-zinc-700; }
 
   .input {
-    @apply w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm shadow-[0_1px_2px_rgb(16_24_40/0.04)]
+    @apply w-full min-w-0 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-base sm:text-sm shadow-[0_1px_2px_rgb(16_24_40/0.04)]
            outline-none transition placeholder:text-zinc-400
            hover:border-zinc-300 focus:border-indigo-500 focus:shadow-glow
            read-only:bg-zinc-50 read-only:text-zinc-600;
@@ -76,7 +89,7 @@ button:not(:disabled), [role="button"], summary { cursor: pointer; }
   .btn-ghost { @apply inline-flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition duration-150 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 px-3 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900; }
 
   .icon-btn {
-    @apply inline-flex h-9 w-9 items-center justify-center rounded-xl text-zinc-400 transition
+    @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-zinc-400 transition sm:h-9 sm:w-9
            hover:bg-zinc-100 hover:text-zinc-900 active:scale-90;
   }
 

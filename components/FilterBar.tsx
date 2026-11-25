@@ -33,9 +33,13 @@ function toFilters(s: State, showStatus: boolean): Filters {
   };
 }
 
-const PERIODS: { value: Period; label: string }[] = [
-  { value: 'this_month', label: 'This month' }, { value: 'last_month', label: 'Last month' },
-  { value: 'this_year', label: 'This year' }, { value: 'all', label: 'All time' }, { value: 'custom', label: 'Custom' },
+/** Short label on phones so all five fit in one row; full label from `sm` up. */
+const lbl = (short: string, full: string) => (
+  <><span className="sm:hidden">{short}</span><span className="hidden sm:inline">{full}</span></>
+);
+const PERIODS: { value: Period; label: React.ReactNode }[] = [
+  { value: 'this_month', label: lbl('Month', 'This month') }, { value: 'last_month', label: lbl('Last', 'Last month') },
+  { value: 'this_year', label: lbl('Year', 'This year') }, { value: 'all', label: lbl('All', 'All time') }, { value: 'custom', label: 'Custom' },
 ];
 
 export default function FilterBar({ onChange, showStatus = false, periodOnly = false }: {
@@ -62,7 +66,7 @@ export default function FilterBar({ onChange, showStatus = false, periodOnly = f
   return (
     <div className="card mb-6 p-3 sm:p-4">
       <div className="flex flex-wrap items-center gap-3">
-        <Segmented value={s.period} onChange={(p) => update({ period: p })} options={PERIODS} className="max-w-full" />
+        <Segmented value={s.period} onChange={(p) => update({ period: p })} options={PERIODS} className="w-full sm:w-auto" full fullOnPhoneOnly />
         {range?.from && (
           <span className="hidden items-center gap-1.5 text-xs text-zinc-400 md:flex">
             <Calendar size={13} /> {fmtDate(range.from)} – {fmtDate(range.to)}
@@ -74,18 +78,18 @@ export default function FilterBar({ onChange, showStatus = false, periodOnly = f
         {s.period === 'custom' && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden">
-            <div className="flex flex-wrap items-end gap-3 pt-3">
-              <div><label className="label">From</label>
-                <input type="date" className="input h-9 w-44 py-0" value={s.from} max={s.to || undefined} onChange={(e) => update({ from: e.target.value })} /></div>
-              <div><label className="label">To</label>
-                <input type="date" className="input h-9 w-44 py-0" value={s.to} min={s.from || undefined} onChange={(e) => update({ to: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-3 pt-3 sm:flex sm:flex-wrap sm:items-end">
+              <div className="min-w-0"><label className="label">From</label>
+                <input type="date" className="input h-10 py-0 sm:h-9 sm:w-44" value={s.from} max={s.to || undefined} onChange={(e) => update({ from: e.target.value })} /></div>
+              <div className="min-w-0"><label className="label">To</label>
+                <input type="date" className="input h-10 py-0 sm:h-9 sm:w-44" value={s.to} min={s.from || undefined} onChange={(e) => update({ to: e.target.value })} /></div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {!periodOnly && (
-        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-3">
+        <div className="mt-3 grid grid-cols-2 gap-2 border-t border-zinc-100 pt-3 sm:flex sm:flex-wrap sm:items-center">
           <Dropdown label="Vehicle" icon={<Bus size={14} />} value={s.vehicle} onChange={(v) => update({ vehicle: v })}
             options={(vehicles ?? []).map((v) => ({ value: String(v.id), label: v.number, hint: v.is_active ? undefined : 'inactive' }))} />
           <Dropdown label="Company" icon={<Building2 size={14} />} value={s.company} onChange={(v) => update({ company: v })}
@@ -98,7 +102,7 @@ export default function FilterBar({ onChange, showStatus = false, periodOnly = f
             {chips.length > 0 && (
               <motion.button type="button" initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
                 onClick={() => update({ vehicle: '', company: '', status: '' })}
-                className="ml-auto flex h-9 items-center gap-1 rounded-xl px-2.5 text-sm font-medium text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900">
+                className="col-span-2 flex h-10 items-center justify-center gap-1 rounded-xl px-2.5 text-sm font-medium text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 sm:ml-auto sm:h-9 sm:justify-start">
                 <X size={14} /> Clear filters
               </motion.button>
             )}

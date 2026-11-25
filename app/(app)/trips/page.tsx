@@ -41,7 +41,7 @@ export default function TripsPage() {
   return (
     <>
       <PageHeader title="Trips" subtitle="Every trip with its live profit and pending payment"
-        action={<Link href="/trips/new" className="btn-primary"><Plus size={16} /> New trip</Link>} />
+        action={<Link href="/trips/new" className="btn-primary hidden lg:inline-flex"><Plus size={16} /> New trip</Link>} />
 
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Segmented value={tab} onChange={setTab} options={TABS.map((t) => ({ ...t, count: trips ? count(t.value) : undefined }))} />

@@ -17,9 +17,11 @@ import ProfitBars from '@/components/charts/ProfitBars';
 import HBars from '@/components/charts/HBars';
 
 type Tab = 'trips' | 'vehicles' | 'fuel' | 'companies';
+// Icons are hidden on phones so all four tabs fit in one row.
+const ic = (node: React.ReactNode) => <span className="hidden sm:inline">{node}</span>;
 const TABS: { value: Tab; label: string; icon: React.ReactNode }[] = [
-  { value: 'trips', label: 'Trips', icon: <Truck size={14} /> }, { value: 'vehicles', label: 'Vehicles', icon: <Bus size={14} /> },
-  { value: 'fuel', label: 'Fuel', icon: <Fuel size={14} /> }, { value: 'companies', label: 'Companies', icon: <Building2 size={14} /> },
+  { value: 'trips', label: 'Trips', icon: ic(<Truck size={14} />) }, { value: 'vehicles', label: 'Vehicles', icon: ic(<Bus size={14} />) },
+  { value: 'fuel', label: 'Fuel', icon: ic(<Fuel size={14} />) }, { value: 'companies', label: 'Companies', icon: ic(<Building2 size={14} />) },
 ];
 
 type Num = number;
@@ -44,7 +46,7 @@ export default function ReportsPage() {
   return (
     <>
       <PageHeader title="Reports" subtitle="Drill into trips, vehicles, fuel and companies" />
-      <Segmented value={tab} onChange={setTab} options={TABS} className="mb-4" />
+      <Segmented value={tab} onChange={setTab} options={TABS} className="mb-4" full fullOnPhoneOnly />
       <FilterBar onChange={setFilters} showStatus={tab === 'trips'} />
 
       {error ? <ErrorState error={error} onRetry={() => mutate()} /> : isLoading || !data ? <SkeletonChart /> : (
@@ -159,9 +161,9 @@ function Layout<R>({ summary, chart, rows, cols, file }: {
       {summary && (
         <div className={cn('grid gap-3', summary.length === 3 ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-4')}>
           {summary.map(([label, value], i) => (
-            <motion.div key={label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="card p-4">
-              <p className="text-xs font-medium text-zinc-500">{label}</p>
-              <p className="mt-0.5 text-lg font-semibold tabular-nums">{value}</p>
+            <motion.div key={label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="card p-3 sm:p-4">
+              <p className="truncate text-xs font-medium text-zinc-500">{label}</p>
+              <p className="mt-0.5 truncate text-base font-semibold tabular-nums sm:text-lg">{value}</p>
             </motion.div>
           ))}
         </div>
@@ -177,7 +179,43 @@ function Layout<R>({ summary, chart, rows, cols, file }: {
             </button>
           )}
         </div>
-        <div className="max-h-[560px] overflow-auto">
+        {/* Phones: one card per row, every figure labelled */}
+        <ul className="divide-y divide-zinc-100 md:hidden">
+          {rows.length === 0 ? <li className="py-10 text-center text-sm text-zinc-400">No data</li> : rows.map((r, i) => {
+            const text = cols.filter((c) => !c.num), nums = cols.filter((c) => c.num);
+            return (
+              <li key={i} className="px-4 py-3">
+                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-sm">
+                  <span className="font-medium">{text[0]?.v(r)}</span>
+                  {text.slice(1).map((c) => <span key={c.h} className="text-xs text-zinc-500">· {c.v(r)}</span>)}
+                </div>
+                <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                  {nums.map((c) => (
+                    <div key={c.h} className="flex min-w-0 items-baseline justify-between gap-2">
+                      <dt className="truncate text-xs text-zinc-400">{c.h}</dt>
+                      <dd className="truncate font-medium tabular-nums">{c.v(r)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </li>
+            );
+          })}
+          {hasFoot && (
+            <li className="bg-zinc-50 px-4 py-3">
+              <p className="text-sm font-semibold">Total</p>
+              <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                {cols.filter((c) => c.num && c.foot !== undefined).map((c) => (
+                  <div key={c.h} className="flex min-w-0 items-baseline justify-between gap-2">
+                    <dt className="truncate text-xs text-zinc-400">{c.h}</dt>
+                    <dd className="truncate font-semibold tabular-nums">{c.foot}</dd>
+                  </div>
+                ))}
+              </dl>
+            </li>
+          )}
+        </ul>
+        {/* Tablet / desktop table */}
+        <div className="hidden max-h-[560px] overflow-auto md:block">
           <table className="table-base">
             <thead><tr>{cols.map((c) => <th key={c.h} className={cn('whitespace-nowrap', c.num ? 'text-right' : 'text-left')}>{c.h}</th>)}</tr></thead>
             <tbody className="divide-y divide-zinc-100">

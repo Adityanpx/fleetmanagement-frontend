@@ -88,25 +88,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-zinc-200/70 bg-white/80 px-4 py-2.5 backdrop-blur-xl lg:hidden">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-zinc-200/70 bg-white/80 px-4 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top))] backdrop-blur-xl lg:hidden">
         <Logo />
         <button type="button" onClick={logout} aria-label="Logout" className="icon-btn"><LogOut size={18} /></button>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-10 lg:pt-8">{children}</main>
+      <main className="pb-tabbar mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 pt-5 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8">{children}</main>
 
       {/* Mobile bottom tab bar */}
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-200/70 bg-white/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
-        <div className="mx-auto flex max-w-md items-end justify-around px-2 pt-1.5">
+        <div className="mx-auto flex max-w-lg items-end justify-around px-1 pt-1.5">
           <TabLink href="/dashboard" label="Home" icon={LayoutDashboard} active={isActive(path, '/dashboard')} />
           <TabLink href="/trips" label="Trips" icon={Truck} active={isActive(path, '/trips') && path !== '/trips/new'} />
           <Link href="/trips/new" aria-label="New trip"
-            className="-mt-5 mb-1 grid h-14 w-14 place-items-center rounded-2xl bg-linear-to-br from-indigo-500 to-violet-600 text-white shadow-[0_8px_20px_-4px_rgb(99_102_241/0.6)] transition active:scale-90">
+            className="-mt-5 mx-1 mb-1 grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-linear-to-br from-indigo-500 to-violet-600 text-white shadow-[0_8px_20px_-4px_rgb(99_102_241/0.6)] transition active:scale-90">
             <Plus size={24} strokeWidth={2.4} />
           </Link>
           <TabLink href="/expenses" label="Expenses" icon={Receipt} active={isActive(path, '/expenses')} />
           <button type="button" onClick={() => setMore(true)}
-            className={cn('flex w-16 flex-col items-center gap-0.5 pb-2 pt-1 text-[11px] font-medium', moreActive ? 'text-indigo-600' : 'text-zinc-500')}>
+            className={cn('flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 pb-2 pt-1 text-[11px] font-medium', moreActive ? 'text-indigo-600' : 'text-zinc-500')}>
             <LayoutGrid size={20} /> More
           </button>
         </div>
@@ -144,7 +144,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
 function TabLink({ href, label, icon: Icon, active }: { href: string; label: string; icon: typeof Truck; active: boolean }) {
   return (
-    <Link href={href} className={cn('relative flex w-16 flex-col items-center gap-0.5 pb-2 pt-1 text-[11px] font-medium transition-colors',
+    <Link href={href} className={cn('relative flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 pb-2 pt-1 text-[11px] font-medium transition-colors',
       active ? 'text-indigo-600' : 'text-zinc-500')}>
       {active && <motion.span layoutId="tab-active" className="absolute -top-1.5 h-0.5 w-8 rounded-full bg-indigo-600" />}
       <Icon size={20} />
