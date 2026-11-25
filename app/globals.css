@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+/* Theme tokens (Tailwind v4 replaces tailwind.config.ts with @theme). */
+@theme {
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.03), 0 1px 3px 0 rgb(0 0 0 / 0.05);
+  --shadow-pop: 0 10px 30px -10px rgb(0 0 0 / 0.2);
+}
+
+:root { color-scheme: light; }
+
+html, body {
+  @apply bg-zinc-50 text-zinc-900 antialiased;
+}
+
+/* Tailwind v4 resets buttons to the default cursor; restore the pointer. */
+button:not(:disabled), [role="button"] { cursor: pointer; }
+
+@layer components {
+  .card { @apply bg-white border border-zinc-200 rounded-xl shadow-card; }
+
+  .label { @apply block text-sm font-medium text-zinc-700 mb-1.5; }
+
+  .input {
+    @apply w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm
+           outline-none transition placeholder:text-zinc-400
+           focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900
+           read-only:bg-zinc-50;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 py-2
+           text-sm font-medium text-white transition hover:bg-zinc-800
+           disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-300
+           bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50
+           disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2
+           text-sm font-medium text-white transition hover:bg-red-700
+           disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm
+           font-medium text-zinc-600 transition hover:bg-zinc-100;
+  }
+  .icon-btn {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition
+           hover:bg-zinc-100 hover:text-zinc-900;
+  }
+}
