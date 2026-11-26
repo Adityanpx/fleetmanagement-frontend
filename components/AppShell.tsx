@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -22,13 +23,18 @@ const manage = [
 
 const isActive = (path: string, href: string) => path === href || path.startsWith(href + '/');
 
-export function Logo({ className, compact }: { className?: string; compact?: boolean }) {
+/** Brand lockup: the Patil "P" mark on a white tile (readable on light and dark panels) plus the name. */
+export function Logo({ className, compact, dark }: { className?: string; compact?: boolean; dark?: boolean }) {
   return (
     <div className={cn('flex items-center gap-2.5', className)}>
-      <span className="grid h-8 w-8 place-items-center rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 text-white shadow-[0_4px_12px_-2px_rgb(99_102_241/0.5)]">
-        <Truck size={16} strokeWidth={2.4} />
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white shadow-[0_2px_10px_-2px_rgb(27_64_104/0.35)] ring-1 ring-zinc-200/70">
+        <Image src="/brand/mark.png" alt="" width={26} height={24} priority />
       </span>
-      {!compact && <span className="text-[17px] font-bold tracking-tight">Bulker<span className="text-indigo-600">Track</span></span>}
+      {!compact && (
+        <span className={cn('text-[17px] font-bold tracking-tight', dark ? 'text-white' : 'text-[#1b4068]')}>
+          Patil <span className={dark ? 'text-orange-300' : 'text-[#cd742d]'}>Logistics</span>
+        </span>
+      )}
     </div>
   );
 }

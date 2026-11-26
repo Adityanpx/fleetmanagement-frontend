@@ -37,7 +37,7 @@ export default function LoginPage() {
         <div className="absolute -bottom-40 right-0 h-[28rem] w-[28rem] rounded-full bg-violet-600/20 blur-3xl" />
         <div className="absolute inset-0 bg-[radial-gradient(rgb(255_255_255/0.06)_1px,transparent_1px)] [background-size:22px_22px]" />
 
-        <Logo className="relative [&_span:last-child]:text-white" />
+        <Logo className="relative" dark />
 
         <div className="relative my-auto">
           <RouteArt />
